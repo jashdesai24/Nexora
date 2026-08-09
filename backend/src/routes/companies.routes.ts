@@ -7,21 +7,29 @@ import {
 const router = Router();
 
 // GET /api/companies
-router.get("/", (_req, res) => {
-  const companies = getAllCompanies();
-  res.json({ companies });
+router.get("/", async (_req, res, next) => {
+  try {
+    const companies = await getAllCompanies();
+    res.json({ companies });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // GET /api/companies/:companyId
-router.get("/:companyId", (req, res) => {
-  const company = getCompanyById(req.params["companyId"]!);
+router.get("/:companyId", async (req, res, next) => {
+  try {
+    const company = await getCompanyById(req.params["companyId"]!);
 
-  if (!company) {
-    res.status(404).json({ error: "Company not found" });
-    return;
+    if (!company) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Company not found' } });
+      return;
+    }
+
+    res.json({ company });
+  } catch (error) {
+    next(error);
   }
-
-  res.json({ company });
 });
 
 export default router;

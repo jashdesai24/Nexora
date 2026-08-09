@@ -19,6 +19,22 @@ const reviewInputSchema = z.object({
   evidenceContext: z.array(z.string()).optional(),
 });
 
+import { jarvisRepository } from "../repositories/jarvis.repository.js";
+
+// GET /api/jarvis/review/:thesisId
+router.get("/review/:thesisId", async (req, res, next) => {
+  try {
+    const review = await jarvisRepository.getLatestReview(req.params.thesisId);
+    if (!review) {
+      res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No review found' } });
+      return;
+    }
+    res.json(review);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/jarvis/review
 router.post("/review", async (req, res) => {
   const parsed = reviewInputSchema.safeParse(req.body);
@@ -32,8 +48,15 @@ router.post("/review", async (req, res) => {
   }
 
   try {
-    const review = await jarvisService.reviewThesis(parsed.data);
-    res.json(review);
+    const reviewOutput = await jarvisService.reviewThesis(parsed.data);
+    
+    // Save to database
+    const savedReview = await jarvisRepository.saveReview({
+      thesisId: parsed.data.thesisId,
+      ...reviewOutput
+    });
+
+    res.json(savedReview);
   } catch (error) {
     console.error(
       "[Jarvis] Error during thesis review:",

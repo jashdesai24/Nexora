@@ -8,7 +8,7 @@ import {
   getInvestmentIntelligence,
   type InvestmentIntelligence,
 } from "../../../domains/investment-intelligence";
-import { getJarvisReview, type JarvisReview, type ThesisSectionTarget } from "../../../domains/jarvis-review";
+import { getJarvisReview, getSavedJarvisReview, type JarvisReview, type ThesisSectionTarget } from "../../../domains/jarvis-review";
 import Skeleton from "../../../components/ui/Skeleton";
 import { Button, Divider } from "../../../components/ui";
 import { cn } from "../../../utils/cn";
@@ -56,7 +56,19 @@ function ThesisBuilderPage() {
       ]);
 
       if (isCurrent) {
-        if (thesisResult) setThesis(thesisResult);
+        if (thesisResult) {
+          setThesis(thesisResult);
+          
+          // Try to fetch a saved review
+          try {
+            const savedReview = await getSavedJarvisReview(thesisResult.id);
+            if (savedReview && isCurrent) {
+              setReview(savedReview);
+            }
+          } catch (error) {
+            console.error("Failed to fetch saved review", error);
+          }
+        }
         setIntelligence(intelligenceResult);
       }
     }
@@ -93,7 +105,7 @@ function ThesisBuilderPage() {
     setIsReviewError(false);
     
     try {
-      const result = await getJarvisReview(thesis.id);
+      const result = await getJarvisReview(thesis);
       if (result) {
         setReview(result);
       } else {

@@ -1,26 +1,48 @@
+import { companyRepository } from "../repositories/company.repository.js";
 import { mockCompanies } from "../domains/company/mock.js";
-import type { CanonicalCompany } from "../domains/company/types.js";
 
 /**
  * Company service — resolves canonical company identity.
- * Currently uses mock data. Will query database when persistence is added.
  */
-export function getCompanyById(
-  companyId: string
-): CanonicalCompany | undefined {
-  return mockCompanies.find((c) => c.id === companyId);
+export async function getCompanyById(companyId: string) {
+  let company = await companyRepository.getCompanyById(companyId);
+  
+  if (!company) {
+    // Auto-seed fallback for development/demo purposes
+    const mock = mockCompanies.find(c => c.id === companyId);
+    if (mock) {
+      company = await companyRepository.createCompany({
+        id: mock.id,
+        name: mock.name,
+        sector: mock.sector,
+        industry: mock.industry,
+        identifiers: mock.listings.map(l => ({ type: l.exchange, value: l.symbol }))
+      });
+    }
+  }
+
+  return company;
 }
 
-export function getCompanyBySymbol(
-  symbol: string
-): CanonicalCompany | undefined {
-  return mockCompanies.find((c) =>
-    c.listings.some(
-      (l) => l.symbol.toUpperCase() === symbol.toUpperCase()
-    )
-  );
+export async function searchCompanies(query: string) {
+  return companyRepository.searchCompanies(query);
 }
 
-export function getAllCompanies(): CanonicalCompany[] {
-  return mockCompanies;
+export async function getAllCompanies() {
+  // We'll return top 20 or seed all mocks if empty, but for now just search empty string
+  const results = await companyRepository.searchCompanies("");
+  if (results.length === 0) {
+    // Quick auto-seed of all mocks
+    for (const mock of mockCompanies) {
+      await companyRepository.createCompany({
+        id: mock.id,
+        name: mock.name,
+        sector: mock.sector,
+        industry: mock.industry,
+        identifiers: mock.listings.map(l => ({ type: l.exchange, value: l.symbol }))
+      });
+    }
+    return companyRepository.searchCompanies("");
+  }
+  return results;
 }

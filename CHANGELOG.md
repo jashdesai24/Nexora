@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### [0.1.0] - Sprint 6.8 (Mock Persistence Replacement)
+- **What changed**: Wired the `Company` and `JarvisReview` domain models to the Prisma database, removing static mocks.
+- **Why it changed**: Completes Phase 3 (Persistence) by ensuring all core user-generated and LLM-generated data is saved reliably.
+- **Architecture**:
+  - `CompanyRepository`: Auto-seeds missing companies to prevent UI breakages while in development.
+  - `JarvisRepository`: Saves Gemini LLM outputs (`strengths`, `gaps`, `questions`) persistently.
+  - Frontend: `ThesisBuilderPage` now proactively fetches saved LLM reviews before deciding to ping the AI, drastically cutting down on redundant LLM token costs.
+
 ### [0.1.0] - Sprint 6.7 (Persistence & Authentication Foundation)
 - **What changed**: Integrated Prisma ORM with SQLite (as a temporary Docker-free replacement for PostgreSQL) and built the initial authentication foundation.
 - **Why it changed**: Nexora requires persistent storage and user identity to save Investment Theses and Watchlists securely across sessions.

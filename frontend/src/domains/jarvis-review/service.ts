@@ -1,41 +1,50 @@
 import type { JarvisReview } from "./types";
+import type { InvestmentThesis } from "../investment-thesis/types";
 import { mockHdfcReview } from "./mock";
-import { getInvestmentThesis } from "../investment-thesis/service"; // Need this to pass the thesis payload to the backend
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
-/**
- * Retrieves the Jarvis review for a specific investment thesis.
- *
- * Strategy:
- * 1. Fetch the thesis locally.
- * 2. Try the backend API first (live Gemini or mock LLM provider)
- * 3. Fall back to frontend mock data if the backend is unavailable
- */
+function getHeaders() {
+  const token = localStorage.getItem('nexora_token');
+  return {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+  };
+}
+
+export async function getSavedJarvisReview(thesisId: string): Promise<JarvisReview | null> {
+  try {
+    const response = await fetch(`${API_BASE}/api/jarvis/review/${thesisId}`, {
+      headers: getHeaders()
+    });
+    
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.warn("[JarvisService] Could not fetch saved review", error);
+  }
+  return null;
+}
+
 export async function getJarvisReview(
-  thesisId: string
+  thesis: InvestmentThesis
 ): Promise<JarvisReview | null> {
-  const thesis = await getInvestmentThesis(thesisId);
-
-  if (!thesis) return null;
-
   try {
     const payload = {
       thesisId: thesis.id,
-      thesis: thesis.thesis, // Note: it's thesis.thesis not thesis.statement
-      supportingReasons: thesis.supportingReasons, // These are already strings
-      risks: thesis.risks, // These are already strings
-      invalidationCriteria: thesis.invalidationCriteria, // These are already strings
-      conviction: thesis.conviction, // Note: conviction not convictionScore
+      thesis: thesis.statement, // using 'statement' as per schema
+      supportingReasons: thesis.supportingReasons,
+      risks: thesis.risks,
+      invalidationCriteria: thesis.invalidationCriteria,
+      conviction: thesis.conviction,
       timeHorizon: thesis.timeHorizon,
     };
 
     const response = await fetch(`${API_BASE}/api/jarvis/review`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
+      headers: getHeaders(),
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(30_000), // Give LLM more time
     });
@@ -53,7 +62,7 @@ export async function getJarvisReview(
   }
 
   // Fallback to frontend mock data
-  if (thesisId === "thesis-hdfc-2026") {
+  if (thesis.id === "thesis-hdfc-2026" || thesis.companyId === "hdfc-bank") {
     return mockHdfcReview;
   }
 
