@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### [0.1.0] - Sprint 6.7 (Persistence & Authentication Foundation)
+- **What changed**: Integrated Prisma ORM with SQLite (as a temporary Docker-free replacement for PostgreSQL) and built the initial authentication foundation.
+- **Why it changed**: Nexora requires persistent storage and user identity to save Investment Theses and Watchlists securely across sessions.
+- **Architecture**: 
+  - Prisma Schema: Modeled `User`, `Company`, `InvestmentThesis`, and `JarvisReview`.
+  - Service Layer: Added `AuthService` (bcrypt/jwt) and `ThesisRepository`.
+  - Frontend: Replaced static local mocks with authenticated `fetch` calls to `/api/theses`. Added an `AuthProvider` and `/login` page.
+- **Security**: JWT verification middleware protects private domain routes.
+
 ### [0.1.0] - Sprint 6.6 (Production Architecture Verification)
 - **What changed**: Conducted a comprehensive technical audit of the codebase to verify architectural stability before beginning Phase 3 (Persistence).
 - **Why it changed**: To ensure the provider abstraction, domain contracts, and security measures adhere strictly to the `NEXORA_MASTER_EXECUTION_SPEC.md` and are ready for database integration.

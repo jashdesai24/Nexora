@@ -6,10 +6,13 @@ import DashboardPage from "../pages/DashboardPage";
 import ResearchWorkspacePage from "../pages/ResearchWorkspacePage";
 import ThesisBuilderPage from "../features/thesis/pages/ThesisBuilderPage";
 
+import LoginPage from "../features/auth/pages/LoginPage";
+
 function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
         <Route element={<MainLayout />}>
           <Route
             path={ROUTES.HOME}

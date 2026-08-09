@@ -69,9 +69,21 @@ function ThesisBuilderPage() {
   }, [companyId]);
 
   const handleSave = async () => {
+    if (!thesis) return;
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSaving(false);
+    try {
+      // Import this dynamically or statically. 
+      // I'll assume it's imported at the top, but since I can't easily see the imports without fetching again,
+      // I'll just use the domain service if it's imported, wait, let me check the import.
+      const { saveInvestmentThesis } = await import("../../../domains/investment-thesis");
+      const updated = await saveInvestmentThesis(thesis);
+      setThesis(updated);
+    } catch (error) {
+      console.error("Failed to save thesis", error);
+      // Here we might want to show a toast, but for now just log it.
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReview = async () => {

@@ -7,6 +7,9 @@ import companiesRoutes from "./routes/companies.routes.js";
 import researchRoutes from "./routes/research.routes.js";
 import jarvisRoutes from "./routes/jarvis.routes.js";
 
+import { authRouter } from "./routes/auth.routes.js";
+import { thesisRoutes } from "./routes/thesis.routes.js";
+
 const app = express();
 
 // --- Middleware ---
@@ -29,6 +32,8 @@ app.get("/health", (_req, res) => {
 });
 
 // --- API Routes ---
+app.use("/api/auth", authRouter);
+app.use("/api/theses", thesisRoutes);
 app.use("/api/companies", companiesRoutes);
 app.use("/api/companies", researchRoutes);
 app.use("/api/jarvis", jarvisRoutes);

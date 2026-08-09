@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// --- IDENTITY ---
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  theses     InvestmentThesis[]
+  watchlists Watchlist[]
+}
+
+// --- COMPANY & RESEARCH ---
+
+model Company {
+  id        String   @id @default(uuid()) // Canonical ID
+  name      String
+  sector    String?
+  industry  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  identifiers   CompanyIdentifier[]
+  theses        InvestmentThesis[]
+  watchlists    Watchlist[]
+  evidence      Evidence[]
+  events        ResearchEvent[]
+}
+
+model CompanyIdentifier {
+  id        String  @id @default(uuid())
+  companyId String
+  type      String  // e.g. "NSE", "BSE", "ISIN"
+  value     String
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([type, value])
+  @@index([companyId])
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String
+  companyId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+}
+
+// --- THESIS ---
+
+model InvestmentThesis {
+  id                   String   @id @default(uuid())
+  userId               String
+  companyId            String
+  statement            String
+  supportingReasons    String   // Stored as JSON string
+  risks                String   // Stored as JSON string
+  invalidationCriteria String   // Stored as JSON string
+  conviction           Int      @default(50)
+  timeHorizon          String
+  status               String   @default("DRAFT") // DRAFT, REVIEWED, FINALIZED
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  versions InvestmentThesisVersion[]
+  reviews  JarvisReview[]
+
+  @@index([userId])
+  @@index([companyId])
+}
+
+model InvestmentThesisVersion {
+  id                   String   @id @default(uuid())
+  thesisId             String
+  statement            String
+  supportingReasons    String   // Stored as JSON string
+  risks                String   // Stored as JSON string
+  invalidationCriteria String   // Stored as JSON string
+  conviction           Int
+  timeHorizon          String
+  createdAt            DateTime @default(now())
+
+  thesis InvestmentThesis @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+
+  @@index([thesisId])
+}
+
+// --- JARVIS ---
+
+model JarvisReview {
+  id                   String   @id @default(uuid())
+  thesisId             String
+  overallAssessment    String
+  strengths            String   // Stored as JSON string
+  gaps                 String   // Stored as JSON string
+  questions            String   // Stored as JSON string
+  thesisQuality        String
+  confidenceAssessment String
+  createdAt            DateTime @default(now())
+
+  thesis InvestmentThesis @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+
+  @@index([thesisId])
+}
+
+// --- RESEARCH INTELLIGENCE (PROVENANCE) ---
+
+model Evidence {
+  id          String   @id @default(uuid())
+  companyId   String
+  sourceId    String
+  title       String
+  summary     String?
+  url         String?
+  category    String   // e.g. "news", "financials", "regulatory"
+  publishedAt DateTime
+  retrievedAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  source  Source  @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  @@index([companyId])
+}
+
+model Source {
+  id        String   @id @default(uuid())
+  name      String   // Publisher name, e.g. "Moneycontrol", "NSE"
+  type      String   // "NewsProvider", "Exchange", "Aggregator"
+  createdAt DateTime @default(now())
+
+  evidence Evidence[]
+}
+
+model ResearchEvent {
+  id          String   @id @default(uuid())
+  companyId   String
+  type        String   // "earnings", "corporate_action"
+  title       String
+  summary     String?
+  date        DateTime
+  createdAt   DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
