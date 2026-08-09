@@ -30,6 +30,9 @@ export type ResearchEvidenceCategory =
 
 export type ResearchEvidenceImpact = "positive" | "negative" | "mixed";
 
+export type FreshnessStatus = "fresh" | "recent" | "stale";
+export type MaterialityLevel = "high" | "medium" | "low" | "unknown";
+
 export interface ResearchEvidence {
   id: string;
   companyId: string;
@@ -39,6 +42,8 @@ export interface ResearchEvidence {
   publishedAt: string; // ISO String
   category: ResearchEvidenceCategory;
   impact: ResearchEvidenceImpact;
+  freshness?: FreshnessStatus;
+  materiality?: MaterialityLevel;
 }
 
 // --- Events ---

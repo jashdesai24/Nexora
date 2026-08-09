@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### [0.1.0] - Sprint 6.10 (Freshness & Materiality Engine — Phase 4 Complete)
+- **What changed**: Added data freshness classification and a rule-based materiality engine to the research pipeline.
+- **Why it changed**: Completes Phase 4 (Research Engine) by enabling Nexora to automatically determine whether new evidence is fresh/stale and whether it is significant enough to warrant user attention.
+- **Architecture**:
+  - `MaterialityService`: Keyword-based classifier (no LLM calls) for `high`, `medium`, `low`, `unknown` materiality.
+  - `classifyFreshness()`: Time-based classifier for `fresh` (< 24h), `recent` (< 7d), `stale` (> 7d).
+  - Frontend: Evidence cards now display colored materiality badges and freshness indicators.
+
 ### [0.1.0] - Sprint 6.9 (Research Pipeline Migration)
 - **What changed**: Refactored the `ResearchIntelligenceService` to persist external news and market data into the SQLite database.
 - **Why it changed**: Completes Phase 4 (Research Pipeline Migration) by ensuring that any intelligence surfaced in the UI is safely archived and attributed to a canonical Source, maintaining data provenance for all Investment Theses.

@@ -132,6 +132,8 @@ model Evidence {
   summary     String?
   url         String?
   category    String   // e.g. "news", "financials", "regulatory"
+  freshness   String?  // "fresh", "recent", "stale"
+  materiality String?  // "high", "medium", "low", "unknown"
   publishedAt DateTime
   retrievedAt DateTime @default(now())
 

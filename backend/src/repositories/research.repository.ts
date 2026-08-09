@@ -12,6 +12,8 @@ export interface UpsertEvidencePayload {
   summary?: string;
   url: string;
   category: string;
+  freshness: string;
+  materiality: string;
   publishedAt: Date;
 }
 
@@ -45,6 +47,8 @@ export class ResearchRepository {
         data: {
           title: data.title,
           summary: data.summary,
+          freshness: data.freshness,
+          materiality: data.materiality,
           publishedAt: data.publishedAt,
           retrievedAt: new Date(),
         },
@@ -60,6 +64,8 @@ export class ResearchRepository {
         summary: data.summary,
         url: data.url,
         category: data.category,
+        freshness: data.freshness,
+        materiality: data.materiality,
         publishedAt: data.publishedAt,
         retrievedAt: new Date(),
       },

@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { Badge, SectionHeader, Timeline } from "../../../components/ui";
-import type { ResearchEvidence } from "../../../domains/research-intelligence";
+import type { ResearchEvidence, MaterialityLevel, FreshnessStatus } from "../../../domains/research-intelligence";
 
 interface SourceAttributedEvidenceSectionProps {
   evidence: ResearchEvidence[];
@@ -11,6 +11,32 @@ const impactTone = {
   negative: "red",
   mixed: "amber",
 } as const;
+
+const materialityTone: Record<MaterialityLevel, "red" | "amber" | "green" | "blue"> = {
+  high: "red",
+  medium: "amber",
+  low: "green",
+  unknown: "blue",
+};
+
+const materialityLabel: Record<MaterialityLevel, string> = {
+  high: "High Materiality",
+  medium: "Medium",
+  low: "Low",
+  unknown: "Unclassified",
+};
+
+const freshnessLabel: Record<FreshnessStatus, string> = {
+  fresh: "Fresh",
+  recent: "Recent",
+  stale: "Stale",
+};
+
+const freshnessDotColor: Record<FreshnessStatus, string> = {
+  fresh: "bg-emerald-400",
+  recent: "bg-amber-400",
+  stale: "bg-zinc-500",
+};
 
 function formatCategory(value: string) {
   return value
@@ -34,7 +60,22 @@ function SourceAttributedEvidenceSection({ evidence }: SourceAttributedEvidenceS
     description: item.summary,
     meta: (
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Materiality Badge */}
+          {item.materiality && (
+            <Badge tone={materialityTone[item.materiality]}>
+              {materialityLabel[item.materiality]}
+            </Badge>
+          )}
+
+          {/* Freshness Indicator */}
+          {item.freshness && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-widest text-[var(--color-muted)]">
+              <span className={`inline-block h-1.5 w-1.5 rounded-full ${freshnessDotColor[item.freshness]}`} />
+              {freshnessLabel[item.freshness]}
+            </span>
+          )}
+
           <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-muted)]">
             {formatCategory(item.category)}
           </span>

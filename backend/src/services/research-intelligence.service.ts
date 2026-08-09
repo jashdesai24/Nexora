@@ -2,10 +2,12 @@ import type { MarketDataProvider, NewsProvider } from "../providers/types.js";
 import type { 
   ResearchIntelligence, 
   SourceType, 
+  FreshnessStatus,
   ResearchEvidenceCategory,
   EventType
 } from "../domains/research-intelligence/types.js";
 import { getCompanyById } from "./company.service.js";
+import { classifyFreshness, classifyMateriality } from "./materiality.service.js";
 
 export class ResearchIntelligenceService {
   constructor(
@@ -40,14 +42,18 @@ export class ResearchIntelligenceService {
         type: "news",
       });
 
+      const publishedDate = new Date(article.publishedAt);
+
       await researchRepository.upsertEvidence({
         companyId,
         sourceId: source.id,
         title: article.title,
         summary: article.summary,
         url: article.url,
-        category: "fundamentals", // generic category for now
-        publishedAt: new Date(article.publishedAt),
+        category: "fundamentals",
+        freshness: classifyFreshness(publishedDate),
+        materiality: classifyMateriality(article.title, article.summary),
+        publishedAt: publishedDate,
       });
     }
 
@@ -77,7 +83,9 @@ export class ResearchIntelligenceService {
         source: sourceMap.get(ev.source.id)!,
         publishedAt: ev.publishedAt.toISOString(),
         category: ev.category as ResearchEvidenceCategory,
-        impact: "mixed" as const, // Currently hardcoded unless analyzed
+        impact: "mixed" as const,
+        freshness: (ev.freshness || "fresh") as FreshnessStatus,
+        materiality: (ev.materiality || "unknown") as string,
         provenance: {
           sourceId: ev.source.id,
           sourceUrl: ev.url || "",
@@ -86,7 +94,7 @@ export class ResearchIntelligenceService {
           fetchedAt: ev.retrievedAt.toISOString(),
           updatedAt: ev.retrievedAt.toISOString(),
           sourceType: ev.source.type as SourceType,
-          freshness: "fresh" as const,
+          freshness: (ev.freshness || "fresh") as FreshnessStatus,
         },
       };
     });

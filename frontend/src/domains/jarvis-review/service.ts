@@ -34,7 +34,7 @@ export async function getJarvisReview(
   try {
     const payload = {
       thesisId: thesis.id,
-      thesis: thesis.statement, // using 'statement' as per schema
+      thesis: thesis.thesis,
       supportingReasons: thesis.supportingReasons,
       risks: thesis.risks,
       invalidationCriteria: thesis.invalidationCriteria,
