@@ -40,16 +40,16 @@ router.get("/:companyId/quote", async (req, res) => {
     const { getCompanyById } = await import(
       "../services/company.service.js"
     );
-    const company = getCompanyById(req.params["companyId"]!);
+    const company = await getCompanyById(req.params["companyId"]!);
 
     if (!company) {
       res.status(404).json({ error: "Company not found" });
       return;
     }
 
-    const nseSymbol = company.listings.find(
-      (l) => l.exchange === "NSE"
-    )?.symbol;
+    const nseSymbol = company.identifiers?.find(
+      (l) => l.type === "NSE"
+    )?.value;
 
     if (!nseSymbol) {
       res.status(404).json({ error: "No NSE listing found" });

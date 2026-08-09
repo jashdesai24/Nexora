@@ -47,7 +47,7 @@ thesisRoutes.get('/', async (req: AuthenticatedRequest, res, next) => {
 
 thesisRoutes.get('/:id', async (req: AuthenticatedRequest, res, next) => {
   try {
-    const thesis = await thesisRepository.getThesisById(req.params.id, req.userId!);
+    const thesis = await thesisRepository.getThesisById(req.params.id as string, req.userId!);
     if (!thesis) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Thesis not found' } });
     }
@@ -61,7 +61,7 @@ thesisRoutes.patch('/:id', async (req: AuthenticatedRequest, res, next) => {
   try {
     const partialSchema = thesisSchema.partial().omit({ companyId: true });
     const validated = partialSchema.parse(req.body);
-    const thesis = await thesisRepository.updateThesis(req.params.id, req.userId!, validated);
+    const thesis = await thesisRepository.updateThesis(req.params.id as string, req.userId!, validated);
     res.json(thesis);
   } catch (error) {
     next(error);

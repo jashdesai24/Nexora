@@ -1,16 +1,12 @@
 import type { MarketDataProvider, NewsProvider } from "../providers/types.js";
-import type { ResearchIntelligence } from "../domains/research-intelligence/types.js";
+import type { 
+  ResearchIntelligence, 
+  SourceType, 
+  ResearchEvidenceCategory,
+  EventType
+} from "../domains/research-intelligence/types.js";
 import { getCompanyById } from "./company.service.js";
 
-/**
- * Research intelligence service.
- * Aggregates data from market data and news providers into the
- * ResearchIntelligence contract consumed by the frontend.
- *
- * Currently returns mock-structured data.
- * When real providers are wired, this service orchestrates the
- * provider calls, normalizes the responses, and assembles the aggregate.
- */
 export class ResearchIntelligenceService {
   constructor(
     private marketData: MarketDataProvider,
@@ -20,14 +16,14 @@ export class ResearchIntelligenceService {
   async getResearchIntelligence(
     companyId: string
   ): Promise<ResearchIntelligence | null> {
-    const company = getCompanyById(companyId);
+    const company = await getCompanyById(companyId);
     if (!company) return null;
 
-    const nseSymbol = company.listings.find(
-      (l) => l.exchange === "NSE"
-    )?.symbol;
+    const nseSymbol = company.identifiers.find(
+      (l) => l.type === "NSE"
+    )?.value;
 
-    // Fetch from providers in parallel
+    // 1. Fetch live data
     const [quote, articles] = await Promise.all([
       nseSymbol
         ? this.marketData.getQuote(nseSymbol)
@@ -35,45 +31,89 @@ export class ResearchIntelligenceService {
       this.news.getCompanyNews(companyId, { limit: 5 }),
     ]);
 
+    // 2. Sync to Database
+    const { researchRepository } = await import("../repositories/research.repository.js");
+    
+    for (const article of articles) {
+      const source = await researchRepository.ensureSourceExists({
+        name: article.publisher,
+        type: "news",
+      });
+
+      await researchRepository.upsertEvidence({
+        companyId,
+        sourceId: source.id,
+        title: article.title,
+        summary: article.summary,
+        url: article.url,
+        category: "fundamentals", // generic category for now
+        publishedAt: new Date(article.publishedAt),
+      });
+    }
+
+    // 3. Query the aggregated persistence layer
+    const dbResearch = await researchRepository.getResearchForCompany(companyId);
+    
+    // 4. Format for frontend contract
     const now = new Date().toISOString();
+    
+    // Extract unique sources for the frontend
+    const sourceMap = new Map();
+    const evidence = dbResearch.evidence.map((ev) => {
+      sourceMap.set(ev.source.id, {
+        id: ev.source.id,
+        title: ev.source.name, // The UI expects a title for the source
+        publisher: ev.source.name,
+        url: ev.url || "", // Or an aggregator URL if source URL doesn't exist
+        publishedAt: ev.publishedAt.toISOString(),
+        sourceType: ev.source.type as SourceType,
+      });
 
-    // Transform provider data into the research intelligence contract
-    const sources = articles.map((article, i) => ({
-      id: `src-${i + 1}`,
-      title: article.title,
-      publisher: article.publisher,
-      url: article.url,
-      publishedAt: article.publishedAt,
-      sourceType: "news" as const,
-    }));
+      return {
+        id: ev.id,
+        companyId,
+        title: ev.title,
+        summary: ev.summary || "",
+        source: sourceMap.get(ev.source.id)!,
+        publishedAt: ev.publishedAt.toISOString(),
+        category: ev.category as ResearchEvidenceCategory,
+        impact: "mixed" as const, // Currently hardcoded unless analyzed
+        provenance: {
+          sourceId: ev.source.id,
+          sourceUrl: ev.url || "",
+          publisher: ev.source.name,
+          publishedAt: ev.publishedAt.toISOString(),
+          fetchedAt: ev.retrievedAt.toISOString(),
+          updatedAt: ev.retrievedAt.toISOString(),
+          sourceType: ev.source.type as SourceType,
+          freshness: "fresh" as const,
+        },
+      };
+    });
 
-    const evidence = articles.map((article, i) => ({
-      id: `ev-${i + 1}`,
-      companyId,
-      title: article.title,
-      summary: article.summary,
-      source: sources[i]!,
-      publishedAt: article.publishedAt,
-      category: "fundamentals" as const,
-      impact: "mixed" as const,
-      provenance: {
-        sourceId: sources[i]!.id,
-        sourceUrl: article.url,
-        publisher: article.publisher,
-        publishedAt: article.publishedAt,
-        fetchedAt: now,
-        updatedAt: now,
-        sourceType: "news" as const,
-        freshness: "fresh" as const,
-      },
-    }));
+    const sources = Array.from(sourceMap.values());
 
     return {
       companyId,
       companyName: company.name,
       generatedAt: now,
       evidence,
-      events: [],
+      events: dbResearch.events.map(e => ({
+        id: e.id,
+        companyId: e.companyId,
+        title: e.title,
+        description: e.summary || "",
+        eventType: e.type as EventType,
+        occurredAt: e.date.toISOString(),
+        source: {
+          id: "sys-event",
+          title: "System",
+          publisher: "System",
+          url: "",
+          publishedAt: e.createdAt.toISOString(),
+          sourceType: "news" as SourceType
+        }
+      })),
       sources,
       keyChanges: quote
         ? [

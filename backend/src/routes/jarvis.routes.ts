@@ -51,10 +51,7 @@ router.post("/review", async (req, res) => {
     const reviewOutput = await jarvisService.reviewThesis(parsed.data);
     
     // Save to database
-    const savedReview = await jarvisRepository.saveReview({
-      thesisId: parsed.data.thesisId,
-      ...reviewOutput
-    });
+    const savedReview = await jarvisRepository.saveReview(reviewOutput);
 
     res.json(savedReview);
   } catch (error) {

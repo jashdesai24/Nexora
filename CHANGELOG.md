@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### [0.1.0] - Sprint 6.9 (Research Pipeline Migration)
+- **What changed**: Refactored the `ResearchIntelligenceService` to persist external news and market data into the SQLite database.
+- **Why it changed**: Completes Phase 4 (Research Pipeline Migration) by ensuring that any intelligence surfaced in the UI is safely archived and attributed to a canonical Source, maintaining data provenance for all Investment Theses.
+- **Architecture**:
+  - `ResearchRepository`: Added `Evidence`, `Source`, and `ResearchEvent` persistence logic.
+  - `ResearchIntelligenceService`: Now acts as a data synchronizer. It fetches live data from `marketData` and `news` providers, upserts it into the SQLite DB, and then queries the DB to construct the `ResearchIntelligence` contract. The frontend contract remained completely untouched.
+
 ### [0.1.0] - Sprint 6.8 (Mock Persistence Replacement)
 - **What changed**: Wired the `Company` and `JarvisReview` domain models to the Prisma database, removing static mocks.
 - **Why it changed**: Completes Phase 3 (Persistence) by ensuring all core user-generated and LLM-generated data is saved reliably.

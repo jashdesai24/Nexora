@@ -14,6 +14,10 @@ export const requireAuth = (req: AuthenticatedRequest, res: Response, next: Next
 
   const token = authHeader.split(' ')[1];
 
+  if (!token) {
+    return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Token missing' } });
+  }
+
   try {
     const { userId } = authService.verifyToken(token);
     req.userId = userId;
