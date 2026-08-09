@@ -11,6 +11,11 @@ import {
   getResearchIntelligence,
   type ResearchIntelligence,
 } from "../domains/research-intelligence";
+import {
+  getUserWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+} from "../domains/watchlist";
 import Skeleton from "../components/ui/Skeleton";
 import WorkspaceHeader from "../features/research/components/WorkspaceHeader";
 import CatalystsSection from "../features/research/sections/CatalystsSection";
@@ -35,6 +40,7 @@ function ResearchWorkspacePage() {
     useState<ResearchIntelligence | null>(null);
   const [researchLoading, setResearchLoading] = useState(true);
   const [researchError, setResearchError] = useState(false);
+  const [isTracked, setIsTracked] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
@@ -44,14 +50,16 @@ function ResearchWorkspacePage() {
       setResearchError(false);
 
       try {
-        const [analysisResult, researchResult] = await Promise.all([
+        const [analysisResult, researchResult, watchlistResult] = await Promise.all([
           getInvestmentIntelligence(companyId),
           getResearchIntelligence(companyId),
+          getUserWatchlist(),
         ]);
 
         if (isCurrent) {
           setIntelligence(analysisResult);
           setResearchIntelligence(researchResult);
+          setIsTracked(watchlistResult.some(c => c.id === companyId));
         }
       } catch {
         if (isCurrent) {
@@ -80,6 +88,20 @@ function ResearchWorkspacePage() {
     );
   }
 
+  const handleTrackToggle = async () => {
+    try {
+      if (isTracked) {
+        await removeFromWatchlist(companyId);
+        setIsTracked(false);
+      } else {
+        await addToWatchlist(companyId);
+        setIsTracked(true);
+      }
+    } catch (e) {
+      console.error("Failed to toggle watchlist", e);
+    }
+  };
+
   return (
     <motion.main
       initial={{ opacity: 0, y: 10 }}
@@ -91,6 +113,8 @@ function ResearchWorkspacePage() {
         companyName={intelligence.companyName}
         confidence={intelligence.confidence}
         attentionReason={intelligence.whyToday}
+        isTracked={isTracked}
+        onTrackToggle={handleTrackToggle}
       />
 
       <div className="mt-16 space-y-16">

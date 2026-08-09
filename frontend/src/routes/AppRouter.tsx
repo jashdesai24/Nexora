@@ -7,27 +7,31 @@ import ResearchWorkspacePage from "../pages/ResearchWorkspacePage";
 import ThesisBuilderPage from "../features/thesis/pages/ThesisBuilderPage";
 
 import LoginPage from "../features/auth/pages/LoginPage";
+import PrivateRoute from "../features/auth/components/PrivateRoute";
 
 function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route element={<MainLayout />}>
-          <Route
-            path={ROUTES.HOME}
-            element={<DashboardPage />}
-          />
+        
+        <Route element={<PrivateRoute />}>
+          <Route element={<MainLayout />}>
+            <Route
+              path={ROUTES.HOME}
+              element={<DashboardPage />}
+            />
 
-          <Route
-            path={ROUTES.RESEARCH_WORKSPACE}
-            element={<ResearchWorkspacePage />}
-          />
+            <Route
+              path={ROUTES.RESEARCH_WORKSPACE}
+              element={<ResearchWorkspacePage />}
+            />
 
           <Route
             path={ROUTES.THESIS_BUILDER}
             element={<ThesisBuilderPage />}
           />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

@@ -10,6 +10,7 @@ import jarvisRoutes from "./routes/jarvis.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { thesisRoutes } from "./routes/thesis.routes.js";
 import { notificationRoutes } from "./routes/notification.routes.js";
+import { watchlistRoutes } from "./routes/watchlist.routes.js";
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/api/companies", companiesRoutes);
 app.use("/api/companies", researchRoutes);
 app.use("/api/jarvis", jarvisRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/watchlist", watchlistRoutes);
 
 // --- Error Handling ---
 app.use(errorHandler);

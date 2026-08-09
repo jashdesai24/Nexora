@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [0.1.0] - Sprint 7.3 (Change Detection & Notifications — Phase 5 Complete)
+### [0.1.0] - Sprint 8.1 (Product Launch Foundation: Auth & Watchlists — Phase 6)
+- **What changed**: Enforced frontend route protection via AuthContext, added user profile controls to the navigation, and implemented the full Watchlist stack.
+- **Why it changed**: Transitions Nexora into a real product by securing the workspace behind authentication and allowing users to customize their dashboard with tracked companies.
+- **Architecture**:
+  - `PrivateRoute.tsx` guards application routes and redirects unauthenticated traffic to `/login`.
+  - `TopNavigation.tsx` now consumes `AuthContext` to display the active user's profile and provide a logout mechanism.
+  - Built `watchlist.repository.ts` and REST routes for `GET`, `POST`, and `DELETE`.
+  - `CompaniesSection.tsx` refactored to fetch live watchlist data instead of static mock data. Displays an actionable empty-state if the user is new.
+  - Added a "Track" toggle inside `WorkspaceHeader.tsx` allowing one-click watchlist management from the research view.
 - **What changed**: Implemented automated change detection and a user notification system to alert users when new evidence fundamentally weakens their thesis.
 - **Why it changed**: Completes Phase 5 (Thesis Intelligence), bringing the "Is thesis assumption affected? -> Notify user" flow to life.
 - **Architecture**:
