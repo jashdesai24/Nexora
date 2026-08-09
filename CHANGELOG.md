@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [0.1.0] - Sprint 6.10 (Freshness & Materiality Engine — Phase 4 Complete)
+### [0.1.0] - Sprint 7.1 (Thesis Intelligence — Phase 5)
+- **What changed**: Introduced Thesis Monitoring by connecting the `ResearchIntelligence` ingestion pipeline to `JarvisService`. 
+- **Why it changed**: Initiates Phase 5 (Thesis Intelligence), enabling Nexora to automatically evaluate how new evidence (`high`/`medium` materiality) impacts a user's active thesis.
+- **Architecture**:
+  - `ThesisImpact` model added to Prisma schema.
+  - `JarvisService.evaluateEvidenceImpact` uses LLM to strictly evaluate evidence against thesis statements and return structured `supports`, `weakens`, `neutral`, or `uncertain` impacts.
+  - Synchronous pipeline limits evaluation to 3 new evidence pieces per request to ensure UI responsiveness.
 - **What changed**: Added data freshness classification and a rule-based materiality engine to the research pipeline.
 - **Why it changed**: Completes Phase 4 (Research Engine) by enabling Nexora to automatically determine whether new evidence is fresh/stale and whether it is significant enough to warrant user attention.
 - **Architecture**:

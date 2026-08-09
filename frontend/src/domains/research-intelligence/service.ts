@@ -16,10 +16,16 @@ export async function getResearchIntelligence(
   companyId: string
 ): Promise<ResearchIntelligence | null> {
   try {
+    const token = localStorage.getItem("nexora_token");
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(
       `${API_BASE}/api/companies/${encodeURIComponent(companyId)}/research`,
       {
-        headers: { Accept: "application/json" },
+        headers,
         signal: AbortSignal.timeout(10_000),
       }
     );

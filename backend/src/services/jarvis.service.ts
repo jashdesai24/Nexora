@@ -143,6 +143,45 @@ const geminiResponseSchema: Schema = {
   ],
 };
 
+// --- Impact Output Validation Schema ---
+
+const impactOutputSchema = z.object({
+  impacts: z.array(
+    z.object({
+      evidenceId: z.string(),
+      impact: z.enum(["supports", "weakens", "neutral", "uncertain"]),
+      rationale: z.string(),
+    })
+  ),
+});
+
+// --- Gemini Impact OpenAPI Schema ---
+
+const geminiImpactResponseSchema: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    impacts: {
+      type: SchemaType.ARRAY,
+      description: "Evaluation of how each provided piece of evidence impacts the thesis.",
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          evidenceId: { type: SchemaType.STRING },
+          impact: {
+            type: SchemaType.STRING,
+            format: "enum",
+            enum: ["supports", "weakens", "neutral", "uncertain"],
+            description: "How this evidence affects the user's thesis reasoning.",
+          },
+          rationale: { type: SchemaType.STRING, description: "A strict, factual explanation (1-2 sentences max) of why this evidence supports or weakens the thesis." },
+        },
+        required: ["evidenceId", "impact", "rationale"],
+      },
+    },
+  },
+  required: ["impacts"],
+};
+
 /**
  * Jarvis service — structured thesis review with live LLM and factual grounding.
  */
@@ -264,5 +303,77 @@ Review this thesis based strictly on the provided Context Data and your system r
       confidenceAssessment: validated.data.confidenceAssessment as ConfidenceAssessment,
       reviewedAt: now,
     };
+  }
+
+  /**
+   * Evaluates the impact of a batch of evidence on an existing thesis.
+   */
+  async evaluateEvidenceImpact(
+    thesis: { statement: string; supportingReasons: string[]; risks: string[]; invalidationCriteria: string[] },
+    evidence: { id: string; title: string; summary: string | null }[]
+  ): Promise<{ evidenceId: string; impact: string; rationale: string }[]> {
+    if (evidence.length === 0) return [];
+
+    const systemPrompt = `
+You are Jarvis, an analytical reasoning engine for investment research.
+Your core principle is: FACTS FIRST. AI SECOND.
+
+You will be given an active Investment Thesis and a list of new factual Evidence.
+Your job is to determine how EACH piece of evidence affects the Thesis.
+
+RULES:
+1. Return a JSON object with an "impacts" array.
+2. For each evidence item, you MUST include its ID, determine the impact (supports, weakens, neutral, or uncertain), and provide a short, factual rationale.
+3. Rationale MUST strictly reference the evidence content and connect it to a specific part of the thesis (statement, reasons, risks, or invalidation).
+4. Do not invent facts or assumptions.
+    `;
+
+    const userPrompt = `
+### User's Investment Thesis
+
+Thesis Statement:
+${thesis.statement}
+
+Supporting Reasons:
+${thesis.supportingReasons.map((r) => `- ${r}`).join("\n")}
+
+Risks:
+${thesis.risks.map((r) => `- ${r}`).join("\n")}
+
+Invalidation Criteria:
+${thesis.invalidationCriteria.map((r) => `- ${r}`).join("\n")}
+
+---
+
+### New Evidence
+
+${evidence.map((e) => `ID: ${e.id}\nTitle: ${e.title}\nSummary: ${e.summary || "N/A"}\n`).join("---\n")}
+    `;
+
+    const llmResponse = await this.llm.analyze({
+      systemPrompt,
+      userPrompt,
+      responseSchema: geminiImpactResponseSchema,
+    });
+
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(llmResponse.content);
+    } catch (e) {
+      console.error("[JarvisService] Failed to parse LLM impact JSON response");
+      throw new Error("Invalid response format from LLM", { cause: e });
+    }
+
+    const validated = impactOutputSchema.safeParse(parsedJson);
+
+    if (!validated.success) {
+      console.error(
+        "[JarvisService] LLM impact output failed schema validation:",
+        validated.error.format()
+      );
+      throw new Error("LLM impact output did not match expected structure");
+    }
+
+    return validated.data.impacts;
   }
 }

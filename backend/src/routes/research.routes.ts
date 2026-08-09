@@ -13,8 +13,24 @@ const researchService = new ResearchIntelligenceService(
 // GET /api/companies/:companyId/research
 router.get("/:companyId/research", async (req, res) => {
   try {
+    let userId: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const { authService } = await import("../services/auth.service.js");
+      try {
+        const decoded = authService.verifyToken(token);
+        if (decoded) {
+          userId = decoded.userId;
+        }
+      } catch {
+        console.warn("[ResearchRoutes] Invalid token on optional auth route");
+      }
+    }
+
     const intelligence = await researchService.getResearchIntelligence(
-      req.params["companyId"]!
+      req.params["companyId"]!,
+      userId
     );
 
     if (!intelligence) {

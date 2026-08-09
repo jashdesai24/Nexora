@@ -83,6 +83,7 @@ model InvestmentThesis {
 
   versions InvestmentThesisVersion[]
   reviews  JarvisReview[]
+  impacts  ThesisImpact[]
 
   @@index([userId])
   @@index([companyId])
@@ -122,6 +123,20 @@ model JarvisReview {
   @@index([thesisId])
 }
 
+model ThesisImpact {
+  id         String   @id @default(uuid())
+  thesisId   String
+  evidenceId String
+  impact     String   // "supports", "weakens", "neutral", "uncertain"
+  rationale  String
+  createdAt  DateTime @default(now())
+
+  thesis   InvestmentThesis @relation(fields: [thesisId], references: [id], onDelete: Cascade)
+  evidence Evidence         @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  @@unique([thesisId, evidenceId])
+}
+
 // --- RESEARCH INTELLIGENCE (PROVENANCE) ---
 
 model Evidence {
@@ -139,6 +154,7 @@ model Evidence {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   source  Source  @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  impacts ThesisImpact[]
 
   @@index([companyId])
 }

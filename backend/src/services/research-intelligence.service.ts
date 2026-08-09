@@ -4,10 +4,15 @@ import type {
   SourceType, 
   FreshnessStatus,
   ResearchEvidenceCategory,
-  EventType
+  EventType,
+  ResearchThesisImpact
 } from "../domains/research-intelligence/types.js";
 import { getCompanyById } from "./company.service.js";
 import { classifyFreshness, classifyMateriality } from "./materiality.service.js";
+import { thesisRepository } from "../repositories/thesis.repository.js";
+import { impactRepository } from "../repositories/impact.repository.js";
+import { JarvisService } from "./jarvis.service.js";
+import { providers } from "../config/providers.js";
 
 export class ResearchIntelligenceService {
   constructor(
@@ -16,7 +21,8 @@ export class ResearchIntelligenceService {
   ) {}
 
   async getResearchIntelligence(
-    companyId: string
+    companyId: string,
+    userId?: string
   ): Promise<ResearchIntelligence | null> {
     const company = await getCompanyById(companyId);
     if (!company) return null;
@@ -59,8 +65,64 @@ export class ResearchIntelligenceService {
 
     // 3. Query the aggregated persistence layer
     const dbResearch = await researchRepository.getResearchForCompany(companyId);
+
+    // --- Thesis Intelligence (Phase 5) ---
+    // 4. If user is authenticated, check for unevaluated evidence against their thesis
+    let dbImpacts: Array<{ evidenceId: string; impact: string; rationale: string }> = [];
     
-    // 4. Format for frontend contract
+    if (userId) {
+      const theses = await thesisRepository.getUserTheses(userId);
+      const thesis = theses.find(t => t.companyId === companyId && t.status !== "Invalidated");
+
+      if (thesis) {
+        // Find existing impacts
+        const existingImpacts = await impactRepository.getImpactsForThesis(thesis.id);
+        const evaluatedEvidenceIds = new Set(existingImpacts.map(i => i.evidenceId));
+
+        // Find high/medium evidence not yet evaluated
+        const unevaluatedEvidence = dbResearch.evidence
+          .filter(e => (e.materiality === "high" || e.materiality === "medium") && !evaluatedEvidenceIds.has(e.id))
+          .slice(0, 3); // Cap at 3 to prevent LLM timeouts during synchronous request
+
+        if (unevaluatedEvidence.length > 0) {
+          try {
+            const jarvis = new JarvisService(providers.llm);
+            // We need to parse the JSON strings in the thesis model
+            const parsedThesis = {
+              statement: thesis.statement,
+              supportingReasons: JSON.parse(thesis.supportingReasons),
+              risks: JSON.parse(thesis.risks),
+              invalidationCriteria: JSON.parse(thesis.invalidationCriteria),
+            };
+
+            const newImpacts = await jarvis.evaluateEvidenceImpact(
+              parsedThesis,
+              unevaluatedEvidence.map(e => ({ id: e.id, title: e.title, summary: e.summary }))
+            );
+
+            // Save to DB
+            await impactRepository.saveImpacts(
+              newImpacts.map(imp => ({
+                thesisId: thesis.id,
+                evidenceId: imp.evidenceId,
+                impact: imp.impact,
+                rationale: imp.rationale,
+              }))
+            );
+
+            // Combine with existing
+            dbImpacts = [...existingImpacts, ...newImpacts];
+          } catch (e) {
+            console.error("[ResearchIntelligenceService] Failed to evaluate thesis impact", e);
+            dbImpacts = existingImpacts;
+          }
+        } else {
+          dbImpacts = existingImpacts;
+        }
+      }
+    }
+
+    // 5. Format for frontend contract
     const now = new Date().toISOString();
     
     // Extract unique sources for the frontend
@@ -138,7 +200,11 @@ export class ResearchIntelligenceService {
             },
           ]
         : [],
-      thesisImpacts: [],
+      thesisImpacts: dbImpacts.map(imp => ({
+        evidenceId: imp.evidenceId,
+        impact: imp.impact as ResearchThesisImpact,
+        rationale: imp.rationale,
+      })),
     };
   }
 }
