@@ -13,18 +13,34 @@ export interface CreateThesisPayload {
 
 export class ThesisRepository {
   async createThesis(data: CreateThesisPayload) {
-    return prisma.investmentThesis.create({
-      data: {
-        userId: data.userId,
-        companyId: data.companyId,
-        statement: data.statement,
-        supportingReasons: JSON.stringify(data.supportingReasons),
-        risks: JSON.stringify(data.risks),
-        invalidationCriteria: JSON.stringify(data.invalidationCriteria),
-        conviction: data.conviction,
-        timeHorizon: data.timeHorizon,
-        status: "DRAFT"
-      },
+    return prisma.$transaction(async (tx) => {
+      const thesis = await tx.investmentThesis.create({
+        data: {
+          userId: data.userId,
+          companyId: data.companyId,
+          statement: data.statement,
+          supportingReasons: JSON.stringify(data.supportingReasons),
+          risks: JSON.stringify(data.risks),
+          invalidationCriteria: JSON.stringify(data.invalidationCriteria),
+          conviction: data.conviction,
+          timeHorizon: data.timeHorizon,
+          status: "DRAFT",
+        },
+      });
+
+      await tx.investmentThesisVersion.create({
+        data: {
+          thesisId: thesis.id,
+          statement: thesis.statement,
+          supportingReasons: thesis.supportingReasons,
+          risks: thesis.risks,
+          invalidationCriteria: thesis.invalidationCriteria,
+          conviction: thesis.conviction,
+          timeHorizon: thesis.timeHorizon,
+        },
+      });
+
+      return thesis;
     });
   }
 
@@ -61,9 +77,25 @@ export class ThesisRepository {
     if (data.risks !== undefined) updateData.risks = JSON.stringify(data.risks);
     if (data.invalidationCriteria !== undefined) updateData.invalidationCriteria = JSON.stringify(data.invalidationCriteria);
 
-    const updated = await prisma.investmentThesis.update({
-      where: { id },
-      data: updateData
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedThesis = await tx.investmentThesis.update({
+        where: { id },
+        data: updateData
+      });
+
+      await tx.investmentThesisVersion.create({
+        data: {
+          thesisId: updatedThesis.id,
+          statement: updatedThesis.statement,
+          supportingReasons: updatedThesis.supportingReasons,
+          risks: updatedThesis.risks,
+          invalidationCriteria: updatedThesis.invalidationCriteria,
+          conviction: updatedThesis.conviction,
+          timeHorizon: updatedThesis.timeHorizon,
+        },
+      });
+
+      return updatedThesis;
     });
 
     return {
@@ -85,6 +117,25 @@ export class ThesisRepository {
       supportingReasons: JSON.parse(t.supportingReasons),
       risks: JSON.parse(t.risks),
       invalidationCriteria: JSON.parse(t.invalidationCriteria),
+    }));
+  }
+
+  async getThesisVersions(thesisId: string, userId: string) {
+    const thesis = await prisma.investmentThesis.findUnique({ where: { id: thesisId } });
+    if (!thesis || thesis.userId !== userId) {
+      throw new Error("Unauthorized or not found");
+    }
+
+    const versions = await prisma.investmentThesisVersion.findMany({
+      where: { thesisId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return versions.map(v => ({
+      ...v,
+      supportingReasons: JSON.parse(v.supportingReasons),
+      risks: JSON.parse(v.risks),
+      invalidationCriteria: JSON.parse(v.invalidationCriteria),
     }));
   }
 }

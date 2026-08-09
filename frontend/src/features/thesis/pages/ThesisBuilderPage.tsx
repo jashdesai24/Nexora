@@ -20,10 +20,12 @@ import ConvictionSection from "../sections/ConvictionSection";
 import HorizonSection from "../sections/HorizonSection";
 import ResearchContextPanel from "../sections/ResearchContextPanel";
 import JarvisReviewSection from "../../jarvis-review/sections/JarvisReviewSection";
+import ThesisHistoryPanel from "../components/ThesisHistoryPanel";
 
 function ThesisBuilderPage() {
   const { companyId = "hdfc-bank" } = useParams();
   const [thesis, setThesis] = useState<InvestmentThesis | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [intelligence, setIntelligence] = useState<InvestmentIntelligence | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -84,15 +86,11 @@ function ThesisBuilderPage() {
     if (!thesis) return;
     setIsSaving(true);
     try {
-      // Import this dynamically or statically. 
-      // I'll assume it's imported at the top, but since I can't easily see the imports without fetching again,
-      // I'll just use the domain service if it's imported, wait, let me check the import.
       const { saveInvestmentThesis } = await import("../../../domains/investment-thesis");
       const updated = await saveInvestmentThesis(thesis);
       setThesis(updated);
     } catch (error) {
       console.error("Failed to save thesis", error);
-      // Here we might want to show a toast, but for now just log it.
     } finally {
       setIsSaving(false);
     }
@@ -264,6 +262,14 @@ function ThesisBuilderPage() {
           </Button>
 
           <Button
+            variant="ghost"
+            onClick={() => setIsHistoryOpen(true)}
+            className="px-6 py-3 text-base"
+          >
+            History
+          </Button>
+
+          <Button
             variant="secondary"
             onClick={handleReview}
             disabled={isReviewing}
@@ -312,6 +318,12 @@ function ThesisBuilderPage() {
           </>
         )}
       </div>
+
+      <ThesisHistoryPanel
+        thesisId={thesis.id}
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+      />
     </motion.main>
   );
 }

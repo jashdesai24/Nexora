@@ -1,4 +1,4 @@
-import type { InvestmentThesis } from "./types";
+import type { InvestmentThesis, InvestmentThesisVersion } from "./types";
 import { mockHdfcThesis } from "./mock";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -9,6 +9,23 @@ function getHeaders() {
     "Content-Type": "application/json",
     ...(token ? { "Authorization": `Bearer ${token}` } : {})
   };
+}
+
+export async function getThesisVersions(id: string): Promise<InvestmentThesisVersion[]> {
+  const token = localStorage.getItem('nexora_token');
+  const response = await fetch(`${API_BASE}/api/theses/${id}/versions`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch thesis versions");
+  }
+
+  const data: InvestmentThesisVersion[] = await response.json();
+  return data;
 }
 
 export async function getInvestmentThesis(

@@ -15,3 +15,15 @@ export interface InvestmentThesis {
   createdAt: string; // ISO String
   updatedAt: string; // ISO String
 }
+
+export interface InvestmentThesisVersion {
+  id: string;
+  thesisId: string;
+  statement: string;
+  supportingReasons: string[];
+  risks: string[];
+  invalidationCriteria: string[];
+  conviction: number;
+  timeHorizon: TimeHorizon;
+  createdAt: string; // ISO String
+}

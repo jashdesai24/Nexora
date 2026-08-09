@@ -57,6 +57,18 @@ thesisRoutes.get('/:id', async (req: AuthenticatedRequest, res, next) => {
   }
 });
 
+thesisRoutes.get('/:id/versions', async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const versions = await thesisRepository.getThesisVersions(req.params.id as string, req.userId!);
+    res.json(versions);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Unauthorized')) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Thesis not found or unauthorized' } });
+    }
+    next(error);
+  }
+});
+
 thesisRoutes.patch('/:id', async (req: AuthenticatedRequest, res, next) => {
   try {
     const partialSchema = thesisSchema.partial().omit({ companyId: true });

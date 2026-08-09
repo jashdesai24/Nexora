@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [0.1.0] - Sprint 7.1 (Thesis Intelligence — Phase 5)
+### [0.1.0] - Sprint 7.2 (Thesis History — Phase 5)
+- **What changed**: Introduced Thesis History snapshotting, ensuring user reasoning is never silently overwritten.
+- **Why it changed**: Fulfills the "Maintain historical snapshots" requirement of Phase 5, allowing users to track how their thesis evolves over time.
+- **Architecture**:
+  - `thesis.repository.ts` now uses Prisma `$transaction` blocks to simultaneously save to `InvestmentThesis` and `InvestmentThesisVersion` on both create and update operations.
+  - Added `GET /api/theses/:id/versions` API endpoint.
+  - Frontend `ThesisBuilderPage` features a new "History" slide-over panel displaying previous versions, dates, and conviction scores.
 - **What changed**: Introduced Thesis Monitoring by connecting the `ResearchIntelligence` ingestion pipeline to `JarvisService`. 
 - **Why it changed**: Initiates Phase 5 (Thesis Intelligence), enabling Nexora to automatically evaluate how new evidence (`high`/`medium` materiality) impacts a user's active thesis.
 - **Architecture**:

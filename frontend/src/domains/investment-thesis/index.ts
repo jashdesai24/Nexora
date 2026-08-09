@@ -1,2 +1,2 @@
 export * from './types';
-export { getInvestmentThesis, saveInvestmentThesis } from './service';
+export { getInvestmentThesis, saveInvestmentThesis, getThesisVersions } from './service';
