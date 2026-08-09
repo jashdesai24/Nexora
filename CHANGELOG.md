@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### [0.1.0] - Sprint 6.5 (Grounded Jarvis V1)
+
+### Added
+- **Gemini Provider (`@google/generative-ai`)**: Implemented the official Google Gen AI SDK in the backend for real AI reasoning.
+- **Structured JSON Output**: Configured `gemini-1.5-pro` with strict OpenAPI schema validation via Zod to guarantee well-formed reviews.
+- **Context Builder Grounding**: Jarvis now bases reviews *strictly* on real market data and news fetched from the Research Intelligence service, preventing hallucination.
+- **Jarvis UI Loading/Error States**: Added professional loading states ("Jarvis is reviewing...") and graceful error handling on the frontend.
+- **Provider Auto-Detection**: Backend `ProviderRegistry` now auto-detects `GEMINI_API_KEY` and falls back to `MockLLMProvider` seamlessly if missing.
+
+## [0.1.0] - Sprint 6.4 (Real Data Provider Integration)
 ### Sprint 6.3: Real Data + Backend Architecture
 - **What changed**: Created the complete backend foundation for Nexora's real data platform.
 - **Why it changed**: Nexora is transitioning from mock-only frontend to a backend-powered architecture capable of ingesting real Indian equity research data (Phase 2 of Master Plan).

@@ -31,6 +31,7 @@ function ThesisBuilderPage() {
   const [review, setReview] = useState<JarvisReview | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [isReviewOutdated, setIsReviewOutdated] = useState(false);
+  const [isReviewError, setIsReviewError] = useState(false);
 
   // Section focus highlight
   const [highlightedSection, setHighlightedSection] = useState<ThesisSectionTarget | null>(null);
@@ -77,9 +78,20 @@ function ThesisBuilderPage() {
     if (!thesis) return;
     setIsReviewing(true);
     setIsReviewOutdated(false);
-    const result = await getJarvisReview(thesis.id);
-    setReview(result);
-    setIsReviewing(false);
+    setIsReviewError(false);
+    
+    try {
+      const result = await getJarvisReview(thesis.id);
+      if (result) {
+        setReview(result);
+      } else {
+        setIsReviewError(true);
+      }
+    } catch {
+      setIsReviewError(true);
+    } finally {
+      setIsReviewing(false);
+    }
   };
 
   // Mark review as outdated when thesis is modified
@@ -241,15 +253,30 @@ function ThesisBuilderPage() {
         {/* Review loading state */}
         {isReviewing && (
           <div className="space-y-4 pt-4">
+            <p className="text-sm text-[var(--color-muted)]">
+              Jarvis is reviewing the available evidence...
+            </p>
             <Skeleton className="h-6 w-3/4" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-5/6" />
             <Skeleton className="h-4 w-2/3" />
           </div>
         )}
+        
+        {/* Review error state */}
+        {isReviewError && !isReviewing && (
+          <>
+            <Divider />
+            <div className="py-8">
+              <p className="text-sm text-red-500">
+                Jarvis is temporarily unavailable.
+              </p>
+            </div>
+          </>
+        )}
 
         {/* Jarvis Review */}
-        {review && !isReviewing && (
+        {review && !isReviewing && !isReviewError && (
           <>
             <Divider />
             <JarvisReviewSection

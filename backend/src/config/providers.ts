@@ -14,6 +14,7 @@ import {
   IndianApiNewsProvider,
   IndianApiFundamentalsProvider,
 } from "../providers/indian-api/indian-api.provider.js";
+import { GeminiProvider } from "../providers/gemini/gemini.provider.js";
 
 /**
  * Provider registry — single source of truth for which providers are active.
@@ -32,26 +33,33 @@ export interface ProviderRegistry {
 
 function createProviderRegistry(): ProviderRegistry {
   const hasIndianApiKey = !!env.INDIAN_API_KEY;
+  const hasGeminiKey = !!env.GEMINI_API_KEY;
+
+  let marketData: MarketDataProvider = new MockMarketDataProvider();
+  let news: NewsProvider = new MockNewsProvider();
+  let fundamentals: FundamentalsProvider = new MockFundamentalsProvider();
+  let llm: LLMProvider = new MockLLMProvider();
 
   if (hasIndianApiKey) {
     console.log("[Nexora] Using Indian API providers (live data)");
     const config = { apiKey: env.INDIAN_API_KEY! };
-
-    return {
-      marketData: new IndianApiMarketDataProvider(config),
-      news: new IndianApiNewsProvider(config),
-      fundamentals: new IndianApiFundamentalsProvider(config),
-      llm: new MockLLMProvider(),
-    };
+    marketData = new IndianApiMarketDataProvider(config);
+    news = new IndianApiNewsProvider(config);
+    fundamentals = new IndianApiFundamentalsProvider(config);
   }
 
-  console.log("[Nexora] Using mock providers (no API keys configured)");
-  return {
-    marketData: new MockMarketDataProvider(),
-    news: new MockNewsProvider(),
-    fundamentals: new MockFundamentalsProvider(),
-    llm: new MockLLMProvider(),
-  };
+  if (hasGeminiKey) {
+    console.log("[Nexora] Using Gemini LLM provider (live AI)");
+    llm = new GeminiProvider({ apiKey: env.GEMINI_API_KEY! });
+  } else {
+    console.log("[Nexora] Using mock LLM provider (no Gemini key)");
+  }
+
+  if (!hasIndianApiKey) {
+      console.log("[Nexora] Using mock market/news providers (no Indian API key)");
+  }
+
+  return { marketData, news, fundamentals, llm };
 }
 
 export const providers = createProviderRegistry();
