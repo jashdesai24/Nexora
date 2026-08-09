@@ -11,6 +11,7 @@ import { getCompanyById } from "./company.service.js";
 import { classifyFreshness, classifyMateriality } from "./materiality.service.js";
 import { thesisRepository } from "../repositories/thesis.repository.js";
 import { impactRepository } from "../repositories/impact.repository.js";
+import { notificationRepository } from "../repositories/notification.repository.js";
 import { JarvisService } from "./jarvis.service.js";
 import { providers } from "../config/providers.js";
 
@@ -109,6 +110,18 @@ export class ResearchIntelligenceService {
                 rationale: imp.rationale,
               }))
             );
+
+            // Change Detection Notification
+            const hasWeakened = newImpacts.some(imp => imp.impact === 'weakens');
+            if (hasWeakened) {
+              await notificationRepository.createNotification({
+                userId,
+                title: "Thesis assumption challenged",
+                message: `New evidence may challenge a core thesis assumption for ${company.name}.`,
+                type: "THESIS_WEAKENED",
+                link: `/companies/${companyId}/thesis`
+              });
+            }
 
             // Combine with existing
             dbImpacts = [...existingImpacts, ...newImpacts];

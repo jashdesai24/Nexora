@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [0.1.0] - Sprint 7.2 (Thesis History — Phase 5)
+### [0.1.0] - Sprint 7.3 (Change Detection & Notifications — Phase 5 Complete)
+- **What changed**: Implemented automated change detection and a user notification system to alert users when new evidence fundamentally weakens their thesis.
+- **Why it changed**: Completes Phase 5 (Thesis Intelligence), bringing the "Is thesis assumption affected? -> Notify user" flow to life.
+- **Architecture**:
+  - `Notification` model added to Prisma schema and exposed via new `notification.routes.ts`.
+  - `ResearchIntelligenceService` detects when `evaluateEvidenceImpact` returns a `weakens` impact and automatically generates a `THESIS_WEAKENED` notification.
+  - Frontend `TopNavigation` features a new `NotificationBell` with a dropdown to view, read, and navigate to the relevant thesis directly from the alert.
 - **What changed**: Introduced Thesis History snapshotting, ensuring user reasoning is never silently overwritten.
 - **Why it changed**: Fulfills the "Maintain historical snapshots" requirement of Phase 5, allowing users to track how their thesis evolves over time.
 - **Architecture**:
