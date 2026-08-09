@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
 import { JarvisService } from "../services/jarvis.service.js";
-import { MockLLMProvider } from "../providers/llm/mock.provider.js";
+import { providers } from "../config/providers.js";
 
 const router = Router();
 
-const llm = new MockLLMProvider();
-const jarvisService = new JarvisService(llm);
+const jarvisService = new JarvisService(providers.llm);
 
 // Input validation schema
 const reviewInputSchema = z.object({
@@ -32,8 +31,18 @@ router.post("/review", async (req, res) => {
     return;
   }
 
-  const review = await jarvisService.reviewThesis(parsed.data);
-  res.json(review);
+  try {
+    const review = await jarvisService.reviewThesis(parsed.data);
+    res.json(review);
+  } catch (error) {
+    console.error(
+      "[Jarvis] Error during thesis review:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+    res.status(503).json({
+      error: "Jarvis review is temporarily unavailable",
+    });
+  }
 });
 
 export default router;

@@ -33,19 +33,34 @@ function ResearchWorkspacePage() {
     useState<InvestmentIntelligence | null>(null);
   const [researchIntelligence, setResearchIntelligence] =
     useState<ResearchIntelligence | null>(null);
+  const [researchLoading, setResearchLoading] = useState(true);
+  const [researchError, setResearchError] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
 
     async function loadData() {
-      const [analysisResult, researchResult] = await Promise.all([
-        getInvestmentIntelligence(companyId),
-        getResearchIntelligence(companyId),
-      ]);
+      setResearchLoading(true);
+      setResearchError(false);
 
-      if (isCurrent) {
-        setIntelligence(analysisResult);
-        setResearchIntelligence(researchResult);
+      try {
+        const [analysisResult, researchResult] = await Promise.all([
+          getInvestmentIntelligence(companyId),
+          getResearchIntelligence(companyId),
+        ]);
+
+        if (isCurrent) {
+          setIntelligence(analysisResult);
+          setResearchIntelligence(researchResult);
+        }
+      } catch {
+        if (isCurrent) {
+          setResearchError(true);
+        }
+      } finally {
+        if (isCurrent) {
+          setResearchLoading(false);
+        }
       }
     }
 
@@ -55,6 +70,7 @@ function ResearchWorkspacePage() {
       isCurrent = false;
     };
   }, [companyId]);
+
 
   if (!intelligence) {
     return (
@@ -105,7 +121,42 @@ function ResearchWorkspacePage() {
         <NextActionsSection questions={intelligence.nextQuestions} />
 
         {/* --- Source-Attributed Research Intelligence --- */}
-        {researchIntelligence && (
+        {researchLoading && !researchIntelligence && (
+          <>
+            <Divider />
+            <div className="space-y-4 py-8">
+              <p className="text-sm text-[var(--color-muted)]">
+                Updating research…
+              </p>
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </>
+        )}
+
+        {researchError && (
+          <>
+            <Divider />
+            <div className="py-8">
+              <p className="text-sm text-[var(--color-muted)]">
+                Research data is temporarily unavailable.
+              </p>
+            </div>
+          </>
+        )}
+
+        {!researchLoading && !researchError && researchIntelligence && researchIntelligence.evidence.length === 0 && researchIntelligence.keyChanges.length === 0 && (
+          <>
+            <Divider />
+            <div className="py-8">
+              <p className="text-sm text-[var(--color-muted)]">
+                No recent research evidence available.
+              </p>
+            </div>
+          </>
+        )}
+
+        {researchIntelligence && (researchIntelligence.evidence.length > 0 || researchIntelligence.keyChanges.length > 0) && (
           <>
             <Divider />
 

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { env } from "./config/env.js";
+import { providers } from "./config/providers.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import companiesRoutes from "./routes/companies.routes.js";
 import researchRoutes from "./routes/research.routes.js";
@@ -17,6 +18,12 @@ app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
     environment: env.NODE_ENV,
+    providers: {
+      marketData: providers.marketData.name,
+      news: providers.news.name,
+      fundamentals: providers.fundamentals.name,
+      llm: providers.llm.name,
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -33,5 +40,8 @@ app.use(errorHandler);
 app.listen(env.PORT, () => {
   console.log(
     `[Nexora] Backend running on http://localhost:${env.PORT} (${env.NODE_ENV})`
+  );
+  console.log(
+    `[Nexora] Providers — marketData: ${providers.marketData.name}, news: ${providers.news.name}, llm: ${providers.llm.name}`
   );
 });
