@@ -12,8 +12,7 @@ import { ResearchIntelligenceService } from "./research-intelligence.service.js"
 
 // Ensure we have a service instance to fetch the intelligence.
 const researchService = new ResearchIntelligenceService(
-  providers.marketData,
-  providers.news
+  providers.marketData
 );
 
 // --- Output Validation Schema ---

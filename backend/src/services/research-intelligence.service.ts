@@ -1,4 +1,4 @@
-import type { MarketDataProvider, NewsProvider } from "../providers/types.js";
+import type { MarketDataProvider } from "../providers/types.js";
 import type { 
   ResearchIntelligence, 
   SourceType, 

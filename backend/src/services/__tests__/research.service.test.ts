@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ResearchIntelligenceService } from '../research-intelligence.service.js';
-import type { MarketDataProvider, NewsProvider } from '../../providers/types.js';
+import type { MarketDataProvider } from '../../providers/types.js';
 import * as researchJobs from '../../jobs/research.jobs.js';
 
 vi.mock('../../jobs/research.jobs.js', () => ({
@@ -32,12 +32,9 @@ describe('ResearchIntelligenceService Tests', () => {
       getOHLC: vi.fn()
     };
 
-    const mockNewsProvider: NewsProvider = {
-      name: 'mock',
-      getCompanyNews: vi.fn().mockResolvedValue([])
-    };
-
-    const service = new ResearchIntelligenceService(mockMarketProvider, mockNewsProvider);
+    const service = new ResearchIntelligenceService(
+      mockMarketProvider
+    );
     
     const result = await service.getResearchIntelligence('c-1');
     
