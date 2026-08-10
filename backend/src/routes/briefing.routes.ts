@@ -38,7 +38,7 @@ briefingRoutes.post("/generate", async (req: AuthenticatedRequest, res, next) =>
 
         // Only use fresh/recent evidence to avoid long prompts with stale data
         const recentEvidence = intelligence.evidence
-          .filter((e) => e.freshness === "fresh" || e.freshness === "recent")
+          .filter((e) => e.provenance.freshness === "fresh" || e.provenance.freshness === "recent")
           .map((e) => ({
             id: e.id,
             title: e.title,
