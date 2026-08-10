@@ -2,9 +2,25 @@ import { Router } from "express";
 import {
   getAllCompanies,
   getCompanyById,
+  searchCompanies,
 } from "../services/company.service.js";
 
 const router = Router();
+
+// GET /api/companies/search
+router.get("/search", async (req, res, next) => {
+  try {
+    const q = req.query["q"] as string;
+    if (!q) {
+      res.json({ companies: [] });
+      return;
+    }
+    const companies = await searchCompanies(q);
+    res.json({ companies });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // GET /api/companies
 router.get("/", async (_req, res, next) => {

@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [0.1.0] - Sprint 9.1 (Production Readiness: Docker & CI/CD — Phase 7)
+### [0.1.0] - Sprint 9.2 (Company Discovery — Phase 7 Polish)
+- **What changed**: Added a global search bar to the Top Navigation and improved the dashboard's empty states.
+- **Why it changed**: Untethered Nexora from hardcoded demonstration routes, allowing users to dynamically search and investigate any supported company via the database mock-layer.
+- **Architecture**:
+  - `companies.routes.ts`: Added `GET /api/companies/search` utilizing the internal `company.service.ts` search resolver.
+  - `GlobalSearch.tsx`: Implemented a debounced frontend search UI that queries the backend as the user types, returning rich company cards with symbols and sectors.
+  - `CompaniesSection.tsx`: Enhanced to automatically fetch and render the top popular companies if the user's personal watchlist is entirely empty.
 - **What changed**: Containerized the Nexora stack for production deployment and added a GitHub Actions CI pipeline.
 - **Why it changed**: Transitions Nexora from a local development project to a deployable, robust product candidate.
 - **Architecture**:
