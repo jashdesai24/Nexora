@@ -1,6 +1,7 @@
 import { motion, type Variants } from "framer-motion";
 import DashboardHero from "../features/dashboard/sections/DashboardHero";
 import MarketPulseSection from "../features/dashboard/sections/MarketPulseSection";
+import DailyBriefingSection from "../features/dashboard/sections/DailyBriefingSection";
 import CompaniesSection from "../features/dashboard/sections/CompaniesSection";
 
 const containerVariants: Variants = {
@@ -30,6 +31,9 @@ function DashboardPage() {
       </motion.div>
       <motion.div variants={itemVariants}>
         <MarketPulseSection />
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <DailyBriefingSection />
       </motion.div>
       <motion.div variants={itemVariants}>
         <CompaniesSection />

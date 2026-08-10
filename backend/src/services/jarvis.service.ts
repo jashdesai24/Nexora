@@ -376,4 +376,105 @@ ${evidence.map((e) => `ID: ${e.id}\nTitle: ${e.title}\nSummary: ${e.summary || "
 
     return validated.data.impacts;
   }
+
+  async generateDailyBriefing(
+    companiesData: { companyId: string; companyName: string; evidence: { id: string; title: string; summary: string | null }[] }[]
+  ) {
+    const briefingOutputSchema = z.object({
+      briefings: z.array(
+        z.object({
+          companyId: z.string(),
+          companyName: z.string(),
+          whatChanged: z.string(),
+          whyItMatters: z.string(),
+          potentialThesisImpact: z.string(),
+          whatRemainsUncertain: z.string(),
+          evidenceUsed: z.array(z.string())
+        })
+      )
+    });
+
+    const geminiBriefingResponseSchema: Schema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        briefings: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              companyId: { type: SchemaType.STRING },
+              companyName: { type: SchemaType.STRING },
+              whatChanged: { type: SchemaType.STRING },
+              whyItMatters: { type: SchemaType.STRING },
+              potentialThesisImpact: { type: SchemaType.STRING },
+              whatRemainsUncertain: { type: SchemaType.STRING },
+              evidenceUsed: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING },
+              },
+            },
+            required: [
+              "companyId",
+              "companyName",
+              "whatChanged",
+              "whyItMatters",
+              "potentialThesisImpact",
+              "whatRemainsUncertain",
+              "evidenceUsed",
+            ],
+          },
+        },
+      },
+      required: ["briefings"],
+    };
+
+    const systemPrompt = `
+      You are Nexora, an elite, fact-driven Research Intelligence agent.
+      Your task is to generate a Daily Morning Briefing for a user based on recent evidence for their tracked companies.
+      
+      CORE PRINCIPLES:
+      1. FACTS FIRST. AI SECOND. Do not invent details. Base everything strictly on the provided evidence.
+      2. No generic news dumps. Synthesize what actually changed and why it matters to an investor.
+      3. Identify potential impacts on an active investment thesis.
+      4. Clearly state what remains uncertain.
+      
+      Output MUST strictly match the provided JSON schema.
+    `;
+
+    const userPrompt = `
+      Generate a morning briefing for the following tracked companies and their recent evidence:
+      
+      ${companiesData.map(c => `
+      --- COMPANY: ${c.companyName} (ID: ${c.companyId}) ---
+      EVIDENCE:
+      ${c.evidence.length === 0 ? "No recent evidence." : c.evidence.map(e => `[ID: ${e.id}] Title: ${e.title}\nSummary: ${e.summary || 'N/A'}`).join("\n\n")}
+      `).join("\n\n")}
+    `;
+
+    const llmResponse = await this.llm.analyze({
+      systemPrompt,
+      userPrompt,
+      responseSchema: geminiBriefingResponseSchema,
+    });
+
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(llmResponse.content);
+    } catch (e) {
+      console.error("[JarvisService] Failed to parse LLM briefing JSON response");
+      throw new Error("Invalid response format from LLM", { cause: e });
+    }
+
+    const validated = briefingOutputSchema.safeParse(parsedJson);
+
+    if (!validated.success) {
+      console.error(
+        "[JarvisService] LLM briefing output failed schema validation:",
+        validated.error.format()
+      );
+      throw new Error("LLM briefing output did not match expected structure");
+    }
+
+    return validated.data.briefings;
+  }
 }

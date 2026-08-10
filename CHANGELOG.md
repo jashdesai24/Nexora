@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [0.1.0] - Sprint 8.1 (Product Launch Foundation: Auth & Watchlists — Phase 6)
+### [0.1.0] - Sprint 8.2 (Daily Briefing — Phase 6)
+- **What changed**: Implemented the Daily Briefing feature to synthesize overnight research for tracked companies into a structured, actionable morning brief.
+- **Why it changed**: Provides users with a "facts first" summary of what changed and why it matters, avoiding generic news dumps and directly tying intelligence to potential thesis impacts.
+- **Architecture**:
+  - `JarvisService.generateDailyBriefing`: New LLM prompt and Zod schema enforcing structured output (What Changed, Why It Matters, Potential Impact, Uncertainties).
+  - `briefing.routes.ts`: New `POST /api/briefings/generate` endpoint orchestrates fetching watchlists, retrieving recent/fresh evidence, and calling Jarvis.
+  - `DailyBriefingSection.tsx`: New interactive Dashboard UI component that allows manual on-demand generation of the briefing.
 - **What changed**: Enforced frontend route protection via AuthContext, added user profile controls to the navigation, and implemented the full Watchlist stack.
 - **Why it changed**: Transitions Nexora into a real product by securing the workspace behind authentication and allowing users to customize their dashboard with tracked companies.
 - **Architecture**:
