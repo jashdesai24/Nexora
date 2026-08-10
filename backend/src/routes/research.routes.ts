@@ -6,8 +6,7 @@ const router = Router();
 
 // Wire providers from the central registry
 const researchService = new ResearchIntelligenceService(
-  providers.marketData,
-  providers.news
+  providers.marketData
 );
 
 // GET /api/companies/:companyId/research

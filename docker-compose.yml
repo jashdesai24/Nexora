@@ -9,9 +9,22 @@ services:
       POSTGRES_PASSWORD: nexora_password
       POSTGRES_DB: nexora_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - nexora_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora_user -d nexora_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - nexora_redisdata:/data
 
   nexora-backend:
     build:
@@ -25,9 +38,30 @@ services:
       - PORT=3001
       - FRONTEND_URL=http://localhost:80
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      # If using SQLite locally, we can mount a volume for dev.db
-    volumes:
-      - nexora_db_data:/app/prisma
+      - DATABASE_URL=postgresql://nexora_user:nexora_password@db:5432/nexora_db?schema=public
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  nexora-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexora_worker
+    command: ["npm", "run", "start:worker"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://nexora_user:nexora_password@db:5432/nexora_db?schema=public
+      - REDIS_URL=redis://redis:6379
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   nexora-frontend:
     build:
@@ -43,4 +77,4 @@ services:
 
 volumes:
   nexora_pgdata:
-  nexora_db_data:
+  nexora_redisdata:

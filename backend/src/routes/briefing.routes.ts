@@ -18,8 +18,7 @@ briefingRoutes.post("/generate", async (req: AuthenticatedRequest, res, next) =>
     }
 
     const researchService = new ResearchIntelligenceService(
-      providers.marketData,
-      providers.news
+      providers.marketData
     );
     const jarvisService = new JarvisService(providers.llm);
 

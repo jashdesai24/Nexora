@@ -8,17 +8,12 @@ import type {
   ResearchThesisImpact
 } from "../domains/research-intelligence/types.js";
 import { getCompanyById } from "./company.service.js";
-import { classifyFreshness, classifyMateriality } from "./materiality.service.js";
 import { thesisRepository } from "../repositories/thesis.repository.js";
 import { impactRepository } from "../repositories/impact.repository.js";
-import { notificationRepository } from "../repositories/notification.repository.js";
-import { JarvisService } from "./jarvis.service.js";
-import { providers } from "../config/providers.js";
 
 export class ResearchIntelligenceService {
   constructor(
-    private marketData: MarketDataProvider,
-    private news: NewsProvider
+    private marketData: MarketDataProvider
   ) {}
 
   async getResearchIntelligence(
@@ -32,43 +27,23 @@ export class ResearchIntelligenceService {
       (l) => l.type === "NSE"
     )?.value;
 
-    // 1. Fetch live data
-    const [quote, articles] = await Promise.all([
-      nseSymbol
-        ? this.marketData.getQuote(nseSymbol)
-        : Promise.resolve(null),
-      this.news.getCompanyNews(companyId, { limit: 5 }),
-    ]);
+    // 1. Fetch live quote synchronously for immediate UI feedback
+    const quote = nseSymbol ? await this.marketData.getQuote(nseSymbol) : null;
 
-    // 2. Sync to Database
+    // 2. Trigger background ingestion asynchronously (fire and forget)
+    // We only trigger this to keep the cache fresh. It doesn't block the API response.
+    const { enqueueResearchIngestion } = await import("../jobs/research.jobs.js");
+    enqueueResearchIngestion({ companyId, userId, forceRefresh: true }).catch(err => {
+      console.error("[ResearchIntelligenceService] Failed to enqueue research ingestion", err);
+    });
+
+    // 2. Query the aggregated persistence layer for immediate response
     const { researchRepository } = await import("../repositories/research.repository.js");
-    
-    for (const article of articles) {
-      const source = await researchRepository.ensureSourceExists({
-        name: article.publisher,
-        type: "news",
-      });
-
-      const publishedDate = new Date(article.publishedAt);
-
-      await researchRepository.upsertEvidence({
-        companyId,
-        sourceId: source.id,
-        title: article.title,
-        summary: article.summary,
-        url: article.url,
-        category: "fundamentals",
-        freshness: classifyFreshness(publishedDate),
-        materiality: classifyMateriality(article.title, article.summary),
-        publishedAt: publishedDate,
-      });
-    }
-
-    // 3. Query the aggregated persistence layer
     const dbResearch = await researchRepository.getResearchForCompany(companyId);
 
     // --- Thesis Intelligence (Phase 5) ---
-    // 4. If user is authenticated, check for unevaluated evidence against their thesis
+    // 3. Return existing evaluations from the DB. 
+    // The background worker will asynchronously evaluate new evidence and send notifications if needed.
     let dbImpacts: Array<{ evidenceId: string; impact: string; rationale: string }> = [];
     
     if (userId) {
@@ -76,62 +51,7 @@ export class ResearchIntelligenceService {
       const thesis = theses.find(t => t.companyId === companyId && t.status !== "Invalidated");
 
       if (thesis) {
-        // Find existing impacts
-        const existingImpacts = await impactRepository.getImpactsForThesis(thesis.id);
-        const evaluatedEvidenceIds = new Set(existingImpacts.map(i => i.evidenceId));
-
-        // Find high/medium evidence not yet evaluated
-        const unevaluatedEvidence = dbResearch.evidence
-          .filter(e => (e.materiality === "high" || e.materiality === "medium") && !evaluatedEvidenceIds.has(e.id))
-          .slice(0, 3); // Cap at 3 to prevent LLM timeouts during synchronous request
-
-        if (unevaluatedEvidence.length > 0) {
-          try {
-            const jarvis = new JarvisService(providers.llm);
-            // We need to parse the JSON strings in the thesis model
-            const parsedThesis = {
-              statement: thesis.statement,
-              supportingReasons: JSON.parse(thesis.supportingReasons),
-              risks: JSON.parse(thesis.risks),
-              invalidationCriteria: JSON.parse(thesis.invalidationCriteria),
-            };
-
-            const newImpacts = await jarvis.evaluateEvidenceImpact(
-              parsedThesis,
-              unevaluatedEvidence.map(e => ({ id: e.id, title: e.title, summary: e.summary }))
-            );
-
-            // Save to DB
-            await impactRepository.saveImpacts(
-              newImpacts.map(imp => ({
-                thesisId: thesis.id,
-                evidenceId: imp.evidenceId,
-                impact: imp.impact,
-                rationale: imp.rationale,
-              }))
-            );
-
-            // Change Detection Notification
-            const hasWeakened = newImpacts.some(imp => imp.impact === 'weakens');
-            if (hasWeakened) {
-              await notificationRepository.createNotification({
-                userId,
-                title: "Thesis assumption challenged",
-                message: `New evidence may challenge a core thesis assumption for ${company.name}.`,
-                type: "THESIS_WEAKENED",
-                link: `/companies/${companyId}/thesis`
-              });
-            }
-
-            // Combine with existing
-            dbImpacts = [...existingImpacts, ...newImpacts];
-          } catch (e) {
-            console.error("[ResearchIntelligenceService] Failed to evaluate thesis impact", e);
-            dbImpacts = existingImpacts;
-          }
-        } else {
-          dbImpacts = existingImpacts;
-        }
+        dbImpacts = await impactRepository.getImpactsForThesis(thesis.id);
       }
     }
 

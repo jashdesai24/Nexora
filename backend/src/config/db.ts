@@ -4,8 +4,16 @@ import { PrismaClient } from '@prisma/client';
 // exhausting your database connection limit.
 // Learn more: https://pris.ly/d/help/next-js-best-practices
 
+import { env } from './env.js';
+
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma = globalForPrisma.prisma || new PrismaClient();
+export const prisma = globalForPrisma.prisma || new PrismaClient({
+  datasources: {
+    db: {
+      url: env.NODE_ENV === 'test' ? env.DATABASE_URL_TEST : env.DATABASE_URL,
+    },
+  },
+});
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

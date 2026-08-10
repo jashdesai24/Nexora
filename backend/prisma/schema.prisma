@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // --- IDENTITY ---
@@ -172,6 +172,9 @@ model Evidence {
   impacts ThesisImpact[]
 
   @@index([companyId])
+  @@index([sourceId])
+  @@index([publishedAt])
+  @@index([retrievedAt])
 }
 
 model Source {

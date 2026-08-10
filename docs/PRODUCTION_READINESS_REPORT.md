@@ -26,6 +26,20 @@ The schema is robust and relationships are well-modeled, but the active provider
 ## 5. Authentication Status: 🟡 PARTIAL
 Sessions and passwords work securely via `bcrypt` and `jwt`. However, there is no email verification, password reset flow, or integration testing to guarantee User A cannot access User B's thesis via IDOR.
 
+### P0: Critical Blocker
+*Status: All resolved.*
+
+1. **[RESOLVED] SQLite is used as the database provider instead of PostgreSQL**
+   - **Fix**: Migrated `schema.prisma` to use `postgresql`. Updated `docker-compose.yml` with `nexora-db` running Postgres 15. Created initial migrations. Configured isolated database for tests (`nexora_test`).
+
+2. **[RESOLVED] Research Intelligence ingestion blocks the API response**
+   - **Fix**: Implemented `BullMQ` + `ioredis`. Extracted ingestion logic into `ResearchIngestionJob`. Configured dedicated worker process (`npm run start:worker`). API now enqueues the job and responds immediately.
+
+3. **[RESOLVED] Missing automated testing (backend/frontend)**
+   - **Fix**: Set up `Vitest` and `Supertest`. Implemented Data-isolation tests for Auth / IDOR. Implemented structure validation tests for `JarvisService`. Setup test database truncation hook for deterministic runs.
+
+---
+
 ## 6. Research Pipeline Status: 🟡 PARTIAL
 Normalization, attribution, and freshness are all active. The missing link is **Scheduled Ingestion**. Currently, the system only pulls fresh data when a user manually interacts with a company.
 

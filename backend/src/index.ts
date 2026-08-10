@@ -47,12 +47,16 @@ app.use("/api/briefings", briefingRoutes);
 // --- Error Handling ---
 app.use(errorHandler);
 
+export { app };
+
 // --- Start ---
-app.listen(env.PORT, () => {
-  console.log(
-    `[Nexora] Backend running on http://localhost:${env.PORT} (${env.NODE_ENV})`
-  );
-  console.log(
-    `[Nexora] Providers — marketData: ${providers.marketData.name}, news: ${providers.news.name}, llm: ${providers.llm.name}`
-  );
-});
+if (env.NODE_ENV !== 'test') {
+  app.listen(env.PORT, () => {
+    console.log(
+      `[Nexora] Backend running on http://localhost:${env.PORT} (${env.NODE_ENV})`
+    );
+    console.log(
+      `[Nexora] Providers — marketData: ${providers.marketData.name}, news: ${providers.news.name}, llm: ${providers.llm.name}`
+    );
+  });
+}
