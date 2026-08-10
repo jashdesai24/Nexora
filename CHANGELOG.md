@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### [0.1.0] - Sprint 8.2 (Daily Briefing — Phase 6)
+### [0.1.0] - Sprint 9.1 (Production Readiness: Docker & CI/CD — Phase 7)
+- **What changed**: Containerized the Nexora stack for production deployment and added a GitHub Actions CI pipeline.
+- **Why it changed**: Transitions Nexora from a local development project to a deployable, robust product candidate.
+- **Architecture**:
+  - `backend/Dockerfile` & `frontend/Dockerfile`: Multi-stage Docker builds to compile TypeScript and optimize assets, keeping runtime images lean and secure.
+  - `docker-compose.yml`: Root-level orchestration for spinning up PostgreSQL (or SQLite volume), the Node Backend, and Nginx-powered Frontend.
+  - `.github/workflows/ci.yml`: Automated CI that executes on PRs and pushes to `main`, ensuring that `eslint` and `tsc` remain unbroken.
 - **What changed**: Implemented the Daily Briefing feature to synthesize overnight research for tracked companies into a structured, actionable morning brief.
 - **Why it changed**: Provides users with a "facts first" summary of what changed and why it matters, avoiding generic news dumps and directly tying intelligence to potential thesis impacts.
 - **Architecture**:
