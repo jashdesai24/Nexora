@@ -1,8 +1,10 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { env } from "./config/env.js";
 import { providers } from "./config/providers.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import { globalRateLimiter, expensiveRateLimiter } from "./middleware/rate-limiter.js";
 import companiesRoutes from "./routes/companies.routes.js";
 import researchRoutes from "./routes/research.routes.js";
 import jarvisRoutes from "./routes/jarvis.routes.js";
@@ -16,8 +18,12 @@ import { briefingRoutes } from "./routes/briefing.routes.js";
 const app = express();
 
 // --- Middleware ---
+app.use(helmet());
 app.use(cors({ origin: env.FRONTEND_URL }));
-app.use(express.json());
+app.use(express.json({ limit: "500kb" })); // Body size limit for security
+
+// Apply global rate limiter to all /api routes
+app.use("/api/", globalRateLimiter);
 
 // --- Health Check ---
 app.get("/health", (_req, res) => {
@@ -39,7 +45,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/theses", thesisRoutes);
 app.use("/api/companies", companiesRoutes);
 app.use("/api/companies", researchRoutes);
-app.use("/api/jarvis", jarvisRoutes);
+app.use("/api/jarvis", expensiveRateLimiter, jarvisRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/briefings", briefingRoutes);

@@ -5,10 +5,12 @@ import {
   searchCompanies,
 } from "../services/company.service.js";
 
+import { searchRateLimiter } from "../middleware/rate-limiter.js";
+
 const router = Router();
 
 // GET /api/companies/search
-router.get("/search", async (req, res, next) => {
+router.get("/search", searchRateLimiter, async (req, res, next) => {
   try {
     const q = req.query["q"] as string;
     if (!q) {

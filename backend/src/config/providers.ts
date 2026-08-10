@@ -4,15 +4,18 @@ import type {
   NewsProvider,
   FundamentalsProvider,
   LLMProvider,
+  CompanyProvider,
 } from "../providers/types.js";
 import { MockMarketDataProvider } from "../providers/market-data/mock.provider.js";
 import { MockNewsProvider } from "../providers/news/mock.provider.js";
 import { MockFundamentalsProvider } from "../providers/fundamentals/mock.provider.js";
 import { MockLLMProvider } from "../providers/llm/mock.provider.js";
+import { MockCompanyProvider } from "../providers/company/mock.provider.js";
 import {
   IndianApiMarketDataProvider,
   IndianApiNewsProvider,
   IndianApiFundamentalsProvider,
+  IndianApiCompanyProvider,
 } from "../providers/indian-api/indian-api.provider.js";
 import { GeminiProvider } from "../providers/gemini/gemini.provider.js";
 
@@ -29,6 +32,7 @@ export interface ProviderRegistry {
   news: NewsProvider;
   fundamentals: FundamentalsProvider;
   llm: LLMProvider;
+  company: CompanyProvider;
 }
 
 function createProviderRegistry(): ProviderRegistry {
@@ -39,6 +43,7 @@ function createProviderRegistry(): ProviderRegistry {
   let news: NewsProvider = new MockNewsProvider();
   let fundamentals: FundamentalsProvider = new MockFundamentalsProvider();
   let llm: LLMProvider = new MockLLMProvider();
+  let company: CompanyProvider = new MockCompanyProvider();
 
   if (hasIndianApiKey) {
     console.log("[Nexora] Using Indian API providers (live data)");
@@ -46,6 +51,7 @@ function createProviderRegistry(): ProviderRegistry {
     marketData = new IndianApiMarketDataProvider(config);
     news = new IndianApiNewsProvider(config);
     fundamentals = new IndianApiFundamentalsProvider(config);
+    company = new IndianApiCompanyProvider(config);
   }
 
   if (hasGeminiKey) {
@@ -59,7 +65,7 @@ function createProviderRegistry(): ProviderRegistry {
       console.log("[Nexora] Using mock market/news providers (no Indian API key)");
   }
 
-  return { marketData, news, fundamentals, llm };
+  return { marketData, news, fundamentals, llm, company };
 }
 
 export const providers = createProviderRegistry();

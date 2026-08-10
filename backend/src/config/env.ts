@@ -20,6 +20,9 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   GROK_API_KEY: z.string().optional(),
 
+  // Optional Cron Settings
+  RESEARCH_CRON_SCHEDULE: z.string().optional(),
+
   // CORS
   FRONTEND_URL: z.string().default("http://localhost:5173"),
 });

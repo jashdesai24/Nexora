@@ -9,6 +9,8 @@ import type {
   NewsQueryOptions,
   FundamentalsProvider,
   CompanyFinancials,
+  CompanyProvider,
+  CompanySearchResult,
 } from "../types.js";
 
 // --- Response Validation Schemas ---
@@ -253,5 +255,46 @@ export class IndianApiFundamentalsProvider implements FundamentalsProvider {
       },
       lastUpdated: new Date().toISOString(),
     };
+  }
+}
+
+// --- Company Discovery Provider ---
+
+export class IndianApiCompanyProvider implements CompanyProvider {
+  name = "indian-api";
+  private apiKey: string;
+
+  constructor(config: IndianApiConfig) {
+    this.apiKey = config.apiKey;
+  }
+
+  async search(query: string): Promise<CompanySearchResult[]> {
+    if (!query) return [];
+
+    // The Indian API doesn't have a direct full-text search endpoint.
+    // We attempt to fetch the exact symbol. If successful, we return it as a result.
+    const raw = await fetchFromIndianApi(
+      "/stock",
+      { name: query.toUpperCase() },
+      this.apiKey
+    );
+
+    if (!raw) return [];
+
+    // If it succeeds, it's likely a valid NSE/BSE symbol.
+    return [
+      {
+        id: query.toLowerCase(),
+        name: query.toUpperCase(),
+        sector: "Unknown", // The API might not return this directly
+        industry: "Unknown",
+        listings: [{ exchange: "NSE", symbol: query.toUpperCase() }],
+      },
+    ];
+  }
+
+  async getById(id: string): Promise<CompanySearchResult | null> {
+    const results = await this.search(id);
+    return results[0] || null;
   }
 }

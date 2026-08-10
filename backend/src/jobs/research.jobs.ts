@@ -25,12 +25,12 @@ export const researchQueue = new Queue<ResearchIngestionJob>(RESEARCH_QUEUE_NAME
 export const enqueueResearchIngestion = async (
   data: ResearchIngestionJob
 ) => {
-  // Use companyId as jobId to prevent duplicate concurrent jobs for the same company
-  const jobId = `${data.companyId}-${Date.now()}`;
+  // Use companyId as jobId for strict deduplication. 
+  // BullMQ will ignore the add() request if a job with this ID is already waiting or active.
+  const jobId = data.companyId;
   
   await researchQueue.add('ingest', data, {
     jobId,
-    // If the same job is already running, avoid enqueuing another immediately (idempotency could be handled by omitting Date.now() if we want strict deduplication, but for now we just want to track it)
   });
   
   return jobId;

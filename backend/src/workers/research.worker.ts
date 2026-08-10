@@ -23,12 +23,13 @@ const processResearchIngestion = async (job: Job<ResearchIngestionJob>) => {
   console.log(`[Worker] Starting research ingestion for ${company.name}`);
 
   // 1. Fetch live data
-  const [, articles] = await Promise.all([
+  const [, articles, financials] = await Promise.all([
     nseSymbol ? providers.marketData.getQuote(nseSymbol) : Promise.resolve(null),
     providers.news.getCompanyNews(companyId, { limit: 5 }),
+    providers.fundamentals.getFinancials(companyId)
   ]);
 
-  // 2. Sync to Database
+  // 2. Sync News to Database
   for (const article of articles) {
     const source = await researchRepository.ensureSourceExists({
       name: article.publisher,
@@ -43,9 +44,31 @@ const processResearchIngestion = async (job: Job<ResearchIngestionJob>) => {
       title: article.title,
       summary: article.summary,
       url: article.url,
-      category: "fundamentals",
+      category: "news",
       freshness: classifyFreshness(publishedDate),
       materiality: classifyMateriality(article.title, article.summary),
+      publishedAt: publishedDate,
+    });
+  }
+
+  // 3. Sync Fundamentals to Database
+  if (financials) {
+    const source = await researchRepository.ensureSourceExists({
+      name: providers.fundamentals.name,
+      type: "fundamentals",
+    });
+
+    const publishedDate = new Date(financials.lastUpdated);
+
+    await researchRepository.upsertEvidence({
+      companyId,
+      sourceId: source.id,
+      title: `${company.name} Financial Snapshot`,
+      summary: `P/E: ${financials.ratios.pe} | ROE: ${financials.ratios.roe}`,
+      url: "",
+      category: "fundamentals",
+      freshness: "fresh",
+      materiality: "high", // Fundamentals are typically highly material
       publishedAt: publishedDate,
     });
   }

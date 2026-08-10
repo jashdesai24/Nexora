@@ -107,3 +107,19 @@ export interface LLMProvider {
   name: string;
   analyze(request: LLMRequest): Promise<LLMResponse>;
 }
+
+// --- Company Discovery ---
+
+export interface CompanySearchResult {
+  id: string;
+  name: string;
+  sector: string;
+  industry: string;
+  listings: Array<{ exchange: string; symbol: string; code?: string }>;
+}
+
+export interface CompanyProvider {
+  name: string;
+  search(query: string): Promise<CompanySearchResult[]>;
+  getById(id: string): Promise<CompanySearchResult | null>;
+}

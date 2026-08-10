@@ -186,8 +186,16 @@ function ResearchWorkspacePage() {
 
             <div className="space-y-16">
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.22em] text-[var(--color-muted)]">
                   Primary Research
+                  {researchIntelligence.generatedAt && (
+                    <>
+                      <span>·</span>
+                      <span className="lowercase normal-case tracking-normal text-[11px] opacity-80">
+                        Updated {new Date(researchIntelligence.generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "numeric" })}
+                      </span>
+                    </>
+                  )}
                 </p>
                 <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--color-text)]">
                   Source-Attributed Intelligence
