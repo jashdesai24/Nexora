@@ -22,8 +22,8 @@ export class CompanyRepository {
     return prisma.company.findMany({
       where: {
         OR: [
-          { name: { contains: query } },
-          { identifiers: { some: { value: { contains: query } } } }
+          { name: { contains: query, mode: 'insensitive' } },
+          { identifiers: { some: { value: { contains: query, mode: 'insensitive' } } } }
         ]
       },
       include: {
